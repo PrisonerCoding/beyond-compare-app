@@ -1,4 +1,6 @@
+import { useState, useEffect, useRef } from 'react'
 import type { CompareMode } from '../types'
+import { getRecentSessions, clearRecentSessions, type RecentSession } from '../utils/session'
 
 const COMPARE_MODES: CompareMode[] = [
   { type: 'text', label: 'Text', icon: '📄' },
@@ -16,6 +18,7 @@ interface ToolbarProps {
   onNewSession?: () => void
   onOpenSession?: () => void
   onSaveSession?: () => void
+  onOpenRecentSession?: (path: string) => void
   onPrevDiff?: () => void
   onNextDiff?: () => void
   onFirstDiff?: () => void
@@ -33,6 +36,7 @@ export function Toolbar({
   onNewSession,
   onOpenSession,
   onSaveSession,
+  onOpenRecentSession,
   onPrevDiff,
   onNextDiff,
   onFirstDiff,
@@ -41,6 +45,43 @@ export function Toolbar({
   currentDiffIndex = 0,
   hasFiles = false,
 }: ToolbarProps) {
+  const [showRecentMenu, setShowRecentMenu] = useState(false)
+  const [recentSessions, setRecentSessions] = useState<RecentSession[]>([])
+  const recentMenuRef = useRef<HTMLDivElement>(null)
+
+  // Load recent sessions
+  useEffect(() => {
+    setRecentSessions(getRecentSessions())
+  }, [])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (recentMenuRef.current && !recentMenuRef.current.contains(e.target as Node)) {
+        setShowRecentMenu(false)
+      }
+    }
+
+    if (showRecentMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showRecentMenu])
+
+  const handleClearRecent = () => {
+    clearRecentSessions()
+    setRecentSessions([])
+    setShowRecentMenu(false)
+  }
+
+  const handleOpenRecent = (path: string) => {
+    onOpenRecentSession?.(path)
+    setShowRecentMenu(false)
+  }
+
   return (
     <div className="toolbar">
       <div className="toolbar-logo">
@@ -55,9 +96,54 @@ export function Toolbar({
         <button className="toolbar-btn" onClick={onNewSession} title="New Session (Ctrl+N)">
           <span className="toolbar-btn-icon">+</span>
         </button>
-        <button className="toolbar-btn" onClick={onOpenSession} title="Open Session (Ctrl+O)">
-          <span className="toolbar-btn-icon">📂</span>
-        </button>
+
+        {/* Open button with dropdown */}
+        <div className="toolbar-btn-group" ref={recentMenuRef}>
+          <button
+            className="toolbar-btn"
+            onClick={onOpenSession}
+            title="Open Session (Ctrl+O)"
+          >
+            <span className="toolbar-btn-icon">📂</span>
+          </button>
+
+          {recentSessions.length > 0 && (
+            <button
+              className={`toolbar-btn dropdown-toggle ${showRecentMenu ? 'active' : ''}`}
+              onClick={() => setShowRecentMenu(!showRecentMenu)}
+              title="Recent Sessions"
+            >
+              <span className="toolbar-btn-icon">▼</span>
+            </button>
+          )}
+
+          {/* Recent Sessions Dropdown */}
+          {showRecentMenu && (
+            <div className="recent-menu">
+              <div className="recent-menu-header">
+                <span>Recent Sessions</span>
+                <button className="recent-clear-btn" onClick={handleClearRecent}>
+                  Clear
+                </button>
+              </div>
+              <div className="recent-menu-list">
+                {recentSessions.map((session, index) => (
+                  <button
+                    key={index}
+                    className="recent-menu-item"
+                    onClick={() => handleOpenRecent(session.path)}
+                    title={session.path}
+                  >
+                    <span className="recent-item-icon">📋</span>
+                    <span className="recent-item-name">{session.name}</span>
+                    <span className="recent-item-summary">{session.summary}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         <button className="toolbar-btn" onClick={onSaveSession} title="Save Session (Ctrl+S)">
           <span className="toolbar-btn-icon">💾</span>
         </button>

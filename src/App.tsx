@@ -15,9 +15,9 @@ import { ImageDiffViewer } from './components/ImageDiffViewer'
 import { computeDiffStats, getLanguageFromPath } from './utils/diff'
 import { isBinaryFile } from './utils/binaryCheck'
 import { compareFolders, getFolderStats } from './utils/folderCompare'
-import { saveSession, loadSession, addRecentSession, type SessionData } from './utils/session'
+import { saveSession, loadSession, loadSessionFromPath, addRecentSession, type SessionData } from './utils/session'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
-import type { FileContent, CompareMode, FolderItem } from './types'
+import type { FileContent, CompareMode, FolderItem, CompareRule } from './types'
 import './App.css'
 
 const DEFAULT_FILTERS = [
@@ -45,6 +45,7 @@ function App() {
   const [folderDiffItems, setFolderDiffItems] = useState<FolderItem[]>([])
   const [isComparingFolders, setIsComparingFolders] = useState(false)
   const [filters, setFilters] = useState<string[]>(DEFAULT_FILTERS)
+  const [compareRule, setCompareRule] = useState<CompareRule>('content')
 
   // Common state
   const [currentMode, setCurrentMode] = useState<CompareMode>({
@@ -525,6 +526,71 @@ function App() {
     }
   }
 
+  const handleOpenRecentSession = async (filePath: string) => {
+    try {
+      const sessionData = await loadSessionFromPath(filePath)
+
+      // Apply session
+      setCurrentMode({
+        type: sessionData.mode,
+        label: sessionData.mode.charAt(0).toUpperCase() + sessionData.mode.slice(1),
+      })
+
+      if (sessionData.filters) {
+        setFilters(sessionData.filters)
+      }
+
+      // Load files/folders
+      if (sessionData.left) {
+        if (sessionData.left.type === 'file') {
+          try {
+            const content = await readTextFile(sessionData.left.path)
+            setLeftFile({
+              path: sessionData.left.path,
+              content,
+              language: getLanguageFromPath(sessionData.left.path),
+            })
+          } catch {
+            console.warn('Failed to load left file from session')
+          }
+        } else {
+          setLeftFolder({
+            path: sessionData.left.path,
+            name: sessionData.left.path.split(/[/\\]/).pop() || sessionData.left.path,
+            type: 'folder',
+            status: 'equal',
+            children: [],
+          })
+        }
+      }
+
+      if (sessionData.right) {
+        if (sessionData.right.type === 'file') {
+          try {
+            const content = await readTextFile(sessionData.right.path)
+            setRightFile({
+              path: sessionData.right.path,
+              content,
+              language: getLanguageFromPath(sessionData.right.path),
+            })
+          } catch {
+            console.warn('Failed to load right file from session')
+          }
+        } else {
+          setRightFolder({
+            path: sessionData.right.path,
+            name: sessionData.right.path.split(/[/\\]/).pop() || sessionData.right.path,
+            type: 'folder',
+            status: 'equal',
+            children: [],
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load recent session:', error)
+    }
+  }
+
   useKeyboardShortcuts({
     onSaveLeft: handleSaveLeft,
     onSaveRight: handleSaveRight,
@@ -552,6 +618,7 @@ function App() {
         onNewSession={handleNewSession}
         onOpenSession={handleOpenSession}
         onSaveSession={handleSaveSession}
+        onOpenRecentSession={handleOpenRecentSession}
         onPrevDiff={handlePrevDiff}
         onNextDiff={handleNextDiff}
         onFirstDiff={handleFirstDiff}
@@ -639,6 +706,8 @@ function App() {
           diffItems={folderDiffItems}
           onFileSelect={handleFileSelectFromFolder}
           onRefresh={refreshFolderComparison}
+          compareRule={compareRule}
+          onCompareRuleChange={setCompareRule}
         />
       )}
 

@@ -27,5 +27,9 @@ export interface FolderItem {
   name: string
   type: 'file' | 'folder'
   status: 'equal' | 'added' | 'removed' | 'modified'
+  size?: number
+  modifiedTime?: number
   children?: FolderItem[]
 }
+
+export type CompareRule = 'content' | 'size' | 'date' | 'binary'

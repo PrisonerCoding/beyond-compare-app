@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import type { FolderItem, FileContent } from '../types'
+import type { FolderItem, FileContent, CompareRule } from '../types'
 import { getLanguageFromPath } from '../utils/diff'
 import { SyncPanel } from './SyncPanel'
+import { formatFileSize, formatDate } from '../utils/folderCompare'
 
 interface FolderDiffViewerProps {
   leftFolder: FolderItem | null
@@ -9,6 +10,8 @@ interface FolderDiffViewerProps {
   diffItems: FolderItem[]
   onFileSelect?: (leftFile: FileContent, rightFile: FileContent | null) => void
   onRefresh?: () => void
+  onCompareRuleChange?: (rule: CompareRule) => void
+  compareRule?: CompareRule
 }
 
 export function FolderDiffViewer({
@@ -17,9 +20,12 @@ export function FolderDiffViewer({
   diffItems,
   onFileSelect,
   onRefresh,
+  onCompareRuleChange,
+  compareRule = 'content',
 }: FolderDiffViewerProps) {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set())
+  const [showAttributes, setShowAttributes] = useState(true)
 
   const toggleExpand = (path: string) => {
     const newExpanded = new Set(expandedPaths)
@@ -33,7 +39,6 @@ export function FolderDiffViewer({
 
   const toggleSelect = (path: string, isCtrlPressed: boolean) => {
     if (isCtrlPressed) {
-      // Multi-select with Ctrl
       const newSelected = new Set(selectedPaths)
       if (newSelected.has(path)) {
         newSelected.delete(path)
@@ -42,7 +47,6 @@ export function FolderDiffViewer({
       }
       setSelectedPaths(newSelected)
     } else {
-      // Single select without Ctrl
       setSelectedPaths(new Set([path]))
     }
   }
@@ -69,40 +73,28 @@ export function FolderDiffViewer({
 
   const getStatusIcon = (status: FolderItem['status']) => {
     switch (status) {
-      case 'added':
-        return '➕'
-      case 'removed':
-        return '➖'
-      case 'modified':
-        return '📝'
-      case 'equal':
-        return '✓'
+      case 'added': return '➕'
+      case 'removed': return '➖'
+      case 'modified': return '📝'
+      case 'equal': return '✓'
     }
   }
 
   const getStatusColor = (status: FolderItem['status']) => {
     switch (status) {
-      case 'added':
-        return 'var(--diff-added-line)'
-      case 'removed':
-        return 'var(--diff-removed-line)'
-      case 'modified':
-        return 'var(--diff-modified-line)'
-      case 'equal':
-        return 'var(--text-muted)'
+      case 'added': return 'var(--diff-added-line)'
+      case 'removed': return 'var(--diff-removed-line)'
+      case 'modified': return 'var(--diff-modified-line)'
+      case 'equal': return 'var(--text-muted)'
     }
   }
 
   const getStatusBg = (status: FolderItem['status']) => {
     switch (status) {
-      case 'added':
-        return 'var(--diff-added-bg)'
-      case 'removed':
-        return 'var(--diff-removed-bg)'
-      case 'modified':
-        return 'var(--diff-modified-bg)'
-      case 'equal':
-        return 'transparent'
+      case 'added': return 'var(--diff-added-bg)'
+      case 'removed': return 'var(--diff-removed-bg)'
+      case 'modified': return 'var(--diff-modified-bg)'
+      case 'equal': return 'transparent'
     }
   }
 
@@ -112,7 +104,6 @@ export function FolderDiffViewer({
     if (item.type === 'folder') {
       toggleExpand(item.path)
     } else {
-      // Single click: select the file
       toggleSelect(item.path, event.ctrlKey || event.metaKey)
     }
   }
@@ -190,6 +181,18 @@ export function FolderDiffViewer({
 
           <span className="tree-item-name">{item.name}</span>
 
+          {/* File attributes */}
+          {showAttributes && item.type === 'file' && (
+            <>
+              <span className="tree-item-size" title="File size">
+                {formatFileSize(item.size)}
+              </span>
+              <span className="tree-item-date" title="Modified date">
+                {formatDate(item.modifiedTime)}
+              </span>
+            </>
+          )}
+
           <span
             className="tree-status-icon"
             style={{ color: getStatusColor(item.status) }}
@@ -239,6 +242,27 @@ export function FolderDiffViewer({
         </span>
 
         <div className="folder-diff-actions">
+          {/* Compare rule selector */}
+          <select
+            className="compare-rule-select"
+            value={compareRule}
+            onChange={(e) => onCompareRuleChange?.(e.target.value as CompareRule)}
+            title="Comparison rule"
+          >
+            <option value="content">Content</option>
+            <option value="size">Size</option>
+            <option value="date">Date</option>
+          </select>
+
+          {/* Toggle attributes */}
+          <button
+            className={`folder-attr-btn ${showAttributes ? 'active' : ''}`}
+            onClick={() => setShowAttributes(!showAttributes)}
+            title={showAttributes ? 'Hide file attributes' : 'Show file attributes'}
+          >
+            {showAttributes ? '📊' : '📋'}
+          </button>
+
           <button
             className="folder-action-btn"
             onClick={selectAllDiffs}
@@ -264,6 +288,18 @@ export function FolderDiffViewer({
         allDiffItems={diffItems}
         onSyncComplete={onRefresh}
       />
+
+      {/* Attribute header when shown */}
+      {showAttributes && (
+        <div className="tree-header">
+          <span className="tree-header-expand" style={{ width: '16px' }} />
+          <span className="tree-header-icon" style={{ width: '20px' }} />
+          <span className="tree-header-name">Name</span>
+          <span className="tree-header-size">Size</span>
+          <span className="tree-header-date">Modified</span>
+          <span className="tree-header-status">Status</span>
+        </div>
+      )}
 
       <div className="folder-tree">
         {diffItems.map((item) => renderItem(item))}

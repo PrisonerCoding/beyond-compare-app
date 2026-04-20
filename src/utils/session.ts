@@ -150,3 +150,14 @@ export function addRecentSession(session: SessionData, path: string): void {
 export function clearRecentSessions(): void {
   localStorage.removeItem(RECENT_SESSIONS_KEY)
 }
+
+export async function loadSessionFromPath(filePath: string): Promise<SessionData> {
+  const content = await readTextFile(filePath)
+  const data = JSON.parse(content) as SessionData
+
+  if (!data.version) {
+    throw new Error('Invalid session file: missing version')
+  }
+
+  return data
+}

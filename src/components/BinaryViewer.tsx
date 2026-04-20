@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { readFile } from '@tauri-apps/plugin-fs'
 
 interface BinaryViewerProps {
@@ -44,6 +44,10 @@ export function BinaryViewer({ leftPath, rightPath }: BinaryViewerProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [diffIndex, setDiffIndex] = useState(0)
+  const [syncScroll, setSyncScroll] = useState(true)
+
+  const leftScrollRef = useRef<HTMLDivElement>(null)
+  const rightScrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -76,6 +80,30 @@ export function BinaryViewer({ leftPath, rightPath }: BinaryViewerProps) {
 
     loadData()
   }, [leftPath, rightPath])
+
+  // Sync scroll between left and right panels
+  useEffect(() => {
+    const leftEl = leftScrollRef.current
+    const rightEl = rightScrollRef.current
+
+    if (!leftEl || !rightEl || !syncScroll) return
+
+    const handleLeftScroll = () => {
+      rightEl.scrollTop = leftEl.scrollTop
+    }
+
+    const handleRightScroll = () => {
+      leftEl.scrollTop = rightEl.scrollTop
+    }
+
+    leftEl.addEventListener('scroll', handleLeftScroll)
+    rightEl.addEventListener('scroll', handleRightScroll)
+
+    return () => {
+      leftEl.removeEventListener('scroll', handleLeftScroll)
+      rightEl.removeEventListener('scroll', handleRightScroll)
+    }
+  }, [syncScroll])
 
   // Compute all byte differences
   const diffBytes = useMemo(() => {
@@ -342,6 +370,14 @@ export function BinaryViewer({ leftPath, rightPath }: BinaryViewerProps) {
           >
             ▼
           </button>
+
+          <button
+            className={`binary-sync-btn ${syncScroll ? 'active' : ''}`}
+            onClick={() => setSyncScroll(!syncScroll)}
+            title={syncScroll ? 'Sync scroll enabled' : 'Sync scroll disabled'}
+          >
+            {syncScroll ? '🔗' : '🔓'}
+          </button>
         </div>
       </div>
 
@@ -359,7 +395,7 @@ export function BinaryViewer({ leftPath, rightPath }: BinaryViewerProps) {
               </span>
               <span className="hex-header-ascii">ASCII</span>
             </div>
-            <div className="hex-content">
+            <div className="hex-content" ref={leftScrollRef}>
               {leftData ? renderHexView(leftData, 'left', offset) : renderMissingHexView(offset, maxSize, 'left')}
             </div>
           </div>
@@ -380,7 +416,7 @@ export function BinaryViewer({ leftPath, rightPath }: BinaryViewerProps) {
               </span>
               <span className="hex-header-ascii">ASCII</span>
             </div>
-            <div className="hex-content">
+            <div className="hex-content" ref={rightScrollRef}>
               {rightData ? renderHexView(rightData, 'right', offset) : renderMissingHexView(offset, maxSize, 'right')}
             </div>
           </div>

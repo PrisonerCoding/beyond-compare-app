@@ -1,11 +1,13 @@
-import { readDir, readTextFile } from '@tauri-apps/plugin-fs'
-import type { FolderItem } from '../types'
+import { readDir, readTextFile, stat } from '@tauri-apps/plugin-fs'
+import type { FolderItem, CompareRule } from '../types'
 import { matchesFilter } from '../components/FilterPanel'
 
 interface DirEntry {
   name: string
   path: string
   isDirectory: boolean
+  size?: number
+  modifiedTime?: number
 }
 
 async function scanDirectory(dirPath: string, recursive: boolean = true): Promise<DirEntry[]> {
@@ -20,6 +22,18 @@ async function scanDirectory(dirPath: string, recursive: boolean = true): Promis
         path: `${dirPath}/${file.name}`,
         isDirectory: file.isDirectory ?? false,
       }
+
+      // Get file metadata for files
+      if (!file.isDirectory) {
+        try {
+          const fileStat = await stat(entry.path)
+          entry.size = fileStat.size
+          entry.modifiedTime = fileStat.mtime?.getTime()
+        } catch {
+          // Skip if can't get metadata
+        }
+      }
+
       entries.push(entry)
 
       if (recursive && file.isDirectory) {
@@ -55,6 +69,8 @@ function buildTree(entries: DirEntry[], basePath: string): FolderItem[] {
           path: currentPath,
           type: isLastPart && !entry.isDirectory ? 'file' : 'folder',
           status: 'equal',
+          size: entry.size,
+          modifiedTime: entry.modifiedTime,
           children: isLastPart ? undefined : [],
         })
       }
@@ -72,7 +88,43 @@ function buildTree(entries: DirEntry[], basePath: string): FolderItem[] {
   return Array.from(root.values())
 }
 
-function compareTextFiles(leftContent: string, rightContent: string): boolean {
+function compareByRule(
+  leftEntry: DirEntry,
+  rightEntry: DirEntry,
+  rule: CompareRule
+): FolderItem['status'] {
+  if (rule === 'date') {
+    // Compare by modification time
+    if (leftEntry.modifiedTime && rightEntry.modifiedTime) {
+      if (leftEntry.modifiedTime === rightEntry.modifiedTime) return 'equal'
+      if (leftEntry.modifiedTime < rightEntry.modifiedTime) return 'modified'
+      if (leftEntry.modifiedTime > rightEntry.modifiedTime) return 'modified'
+    }
+    return 'modified'
+  }
+
+  if (rule === 'size') {
+    // Compare by file size
+    if (leftEntry.size && rightEntry.size) {
+      return leftEntry.size === rightEntry.size ? 'equal' : 'modified'
+    }
+    return 'modified'
+  }
+
+  if (rule === 'binary') {
+    // For binary comparison, we just check size for now
+    // Full binary comparison would require reading and comparing content
+    if (leftEntry.size && rightEntry.size) {
+      return leftEntry.size === rightEntry.size ? 'equal' : 'modified'
+    }
+    return 'modified'
+  }
+
+  // Content comparison (default)
+  return 'modified' // Will be determined by actual content comparison
+}
+
+async function compareTextFiles(leftContent: string, rightContent: string): boolean {
   return leftContent === rightContent
 }
 
@@ -82,10 +134,12 @@ export async function compareFolders(
   options?: {
     recursive?: boolean
     ignorePatterns?: string[]
+    compareRule?: CompareRule
   }
 ): Promise<FolderItem[]> {
   const recursive = options?.recursive ?? true
   const ignorePatterns = options?.ignorePatterns ?? ['node_modules', '.git', '.DS_Store', 'Thumbs.db']
+  const compareRule = options?.compareRule ?? 'content'
 
   const leftEntries = await scanDirectory(leftPath, recursive)
   const rightEntries = await scanDirectory(rightPath, recursive)
@@ -125,12 +179,16 @@ export async function compareFolders(
       if (leftEntry.isDirectory && rightEntry.isDirectory) {
         status = 'equal'
       } else if (!leftEntry.isDirectory && !rightEntry.isDirectory) {
-        try {
-          const leftContent = await readTextFile(leftEntry.path)
-          const rightContent = await readTextFile(rightEntry.path)
-          status = compareTextFiles(leftContent, rightContent) ? 'equal' : 'modified'
-        } catch {
-          status = 'modified'
+        if (compareRule === 'content') {
+          try {
+            const leftContent = await readTextFile(leftEntry.path)
+            const rightContent = await readTextFile(rightEntry.path)
+            status = compareTextFiles(leftContent, rightContent) ? 'equal' : 'modified'
+          } catch {
+            status = compareByRule(leftEntry, rightEntry, 'size')
+          }
+        } else {
+          status = compareByRule(leftEntry, rightEntry, compareRule)
         }
       } else {
         status = 'modified'
@@ -149,6 +207,14 @@ export async function compareFolders(
         ? (leftEntry?.isDirectory ?? rightEntry?.isDirectory ?? false)
         : true
 
+      const size = isLastPart && !isDirectory
+        ? (leftEntry?.size ?? rightEntry?.size)
+        : undefined
+
+      const modifiedTime = isLastPart && !isDirectory
+        ? (leftEntry?.modifiedTime ?? rightEntry?.modifiedTime)
+        : undefined
+
       let item = current.find(c => c.name === part)
 
       if (!item) {
@@ -157,11 +223,15 @@ export async function compareFolders(
           path: currentPath,
           type: isDirectory ? 'folder' : 'file',
           status: isLastPart ? status : 'equal',
+          size,
+          modifiedTime,
           children: isLastPart && !isDirectory ? undefined : [],
         }
         current.push(item)
       } else if (isLastPart) {
         item.status = status
+        if (size) item.size = size
+        if (modifiedTime) item.modifiedTime = modifiedTime
       }
 
       if (!isLastPart && item.children) {
@@ -226,4 +296,22 @@ export function getFolderStats(items: FolderItem[]): {
   items.forEach(traverse)
 
   return { added, removed, modified, equal }
+}
+
+// Format file size for display
+export function formatFileSize(bytes: number | undefined): string {
+  if (!bytes) return '-'
+
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+}
+
+// Format date for display
+export function formatDate(timestamp: number | undefined): string {
+  if (!timestamp) return '-'
+
+  const date = new Date(timestamp)
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
