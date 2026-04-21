@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FolderItem } from '../types'
-import { generateSyncOperations, type SyncOperation } from '../utils/syncOperations'
+import type { SyncOperation } from '../utils/syncOperations'
 import { SyncPreviewModal } from './SyncPreviewModal'
 
 interface SyncPanelProps {
@@ -15,18 +15,12 @@ export function SyncPanel({
   leftFolder,
   rightFolder,
   selectedItems,
-  allDiffItems,
+  allDiffItems: _allDiffItemsUnused,
   onSyncComplete,
 }: SyncPanelProps) {
   const [previewOpen, setPreviewOpen] = useState(false)
   const [pendingOperations, setPendingOperations] = useState<SyncOperation[]>([])
-  const [syncDirection, setSyncDirection] = useState<'left-to-right' | 'right-to-left' | 'mirror-left' | 'mirror-right'>('left-to-right')
-
   const selectedFiles = selectedItems.filter(item => item.type === 'file')
-
-  const getSelectedItems = (): FolderItem[] => {
-    return selectedItems
-  }
 
   const openPreview = (direction: 'left-to-right' | 'right-to-left') => {
     if (!leftFolder || !rightFolder) return
@@ -55,7 +49,6 @@ export function SyncPanel({
     }
 
     setPendingOperations(operations)
-    setSyncDirection(direction)
     setPreviewOpen(true)
   }
 

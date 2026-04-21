@@ -48,46 +48,6 @@ async function scanDirectory(dirPath: string, recursive: boolean = true): Promis
   return entries
 }
 
-function buildTree(entries: DirEntry[], basePath: string): FolderItem[] {
-  const root: Map<string, FolderItem> = new Map()
-
-  for (const entry of entries) {
-    const relativePath = entry.path.replace(basePath, '').replace(/^[/\\]/, '')
-    const parts = relativePath.split(/[/\\]/)
-
-    let current = root
-    let currentPath = basePath
-
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i]
-      currentPath = `${currentPath}/${part}`
-
-      if (!current.has(part)) {
-        const isLastPart = i === parts.length - 1
-        current.set(part, {
-          name: part,
-          path: currentPath,
-          type: isLastPart && !entry.isDirectory ? 'file' : 'folder',
-          status: 'equal',
-          size: entry.size,
-          modifiedTime: entry.modifiedTime,
-          children: isLastPart ? undefined : [],
-        })
-      }
-
-      if (i < parts.length - 1) {
-        const item = current.get(part)!
-        if (!item.children) {
-          item.children = []
-        }
-        current = new Map(item.children.map(c => [c.name, c]))
-      }
-    }
-  }
-
-  return Array.from(root.values())
-}
-
 function compareByRule(
   leftEntry: DirEntry,
   rightEntry: DirEntry,
@@ -124,7 +84,7 @@ function compareByRule(
   return 'modified' // Will be determined by actual content comparison
 }
 
-async function compareTextFiles(leftContent: string, rightContent: string): boolean {
+async function compareTextFiles(leftContent: string, rightContent: string): Promise<boolean> {
   return leftContent === rightContent
 }
 
@@ -183,7 +143,7 @@ export async function compareFolders(
           try {
             const leftContent = await readTextFile(leftEntry.path)
             const rightContent = await readTextFile(rightEntry.path)
-            status = compareTextFiles(leftContent, rightContent) ? 'equal' : 'modified'
+            status = await compareTextFiles(leftContent, rightContent) ? 'equal' : 'modified'
           } catch {
             status = compareByRule(leftEntry, rightEntry, 'size')
           }

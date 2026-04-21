@@ -5,11 +5,6 @@ interface FilterPanelProps {
   onFiltersChange: (filters: string[]) => void
 }
 
-interface FilterItem {
-  pattern: string
-  type: 'glob' | 'regex'
-}
-
 const DEFAULT_GLOB_FILTERS = [
   'node_modules',
   '.git',

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import type { CompareMode } from '../types'
+import type { CompareMode, LayoutMode } from '../types'
 import { getRecentSessions, clearRecentSessions, type RecentSession } from '../utils/session'
 
 const COMPARE_MODES: CompareMode[] = [
@@ -23,6 +23,13 @@ interface ToolbarProps {
   onNextDiff?: () => void
   onFirstDiff?: () => void
   onLastDiff?: () => void
+  onGoToLine?: () => void
+  layoutMode?: LayoutMode
+  onLayoutChange?: (mode: LayoutMode) => void
+  wordWrap?: 'on' | 'off'
+  onWordWrapChange?: (mode: 'on' | 'off') => void
+  showCompareOptions?: boolean
+  onToggleCompareOptions?: () => void
   diffCount?: number
   currentDiffIndex?: number
   hasFiles?: boolean
@@ -41,6 +48,13 @@ export function Toolbar({
   onNextDiff,
   onFirstDiff,
   onLastDiff,
+  onGoToLine,
+  layoutMode = 'horizontal',
+  onLayoutChange,
+  wordWrap = 'off',
+  onWordWrapChange,
+  showCompareOptions = false,
+  onToggleCompareOptions,
   diffCount = 0,
   currentDiffIndex = 0,
   hasFiles = false,
@@ -205,12 +219,49 @@ export function Toolbar({
         >
           <span className="nav-btn-icon">⏭</span>
         </button>
+        <button
+          className="nav-btn goto-btn"
+          onClick={onGoToLine}
+          disabled={!hasFiles}
+          title="Go to Line (Ctrl+G)"
+        >
+          <span className="nav-btn-icon">📍</span>
+        </button>
       </div>
 
       <div className="toolbar-divider" />
 
       {/* Actions */}
       <div className="toolbar-actions">
+        {/* Compare Options Toggle */}
+        <button
+          className={`options-btn ${showCompareOptions ? 'active' : ''}`}
+          onClick={onToggleCompareOptions}
+          title="Toggle compare options"
+        >
+          <span className="options-btn-icon">⚙</span>
+        </button>
+
+        {/* Word Wrap Toggle */}
+        <button
+          className={`wrap-btn ${wordWrap === 'on' ? 'active' : ''}`}
+          onClick={() => onWordWrapChange?.(wordWrap === 'on' ? 'off' : 'on')}
+          title={wordWrap === 'on' ? 'Disable word wrap' : 'Enable word wrap'}
+        >
+          <span className="wrap-btn-icon">↩</span>
+        </button>
+
+        {/* Layout Toggle */}
+        <button
+          className="layout-btn"
+          onClick={() => onLayoutChange?.(layoutMode === 'horizontal' ? 'vertical' : 'horizontal')}
+          title={layoutMode === 'horizontal' ? 'Switch to vertical layout' : 'Switch to horizontal layout'}
+        >
+          <span className="layout-btn-icon">
+            {layoutMode === 'horizontal' ? '⬍' : '⬌'}
+          </span>
+        </button>
+
         <button className="action-btn" onClick={onRefresh} title="Refresh (F5)">
           <span className="action-btn-icon">🔄</span>
           Refresh

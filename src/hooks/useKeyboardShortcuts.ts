@@ -12,6 +12,7 @@ interface KeyboardShortcuts {
   onNewSession?: () => void
   onOpenSession?: () => void
   onSaveSession?: () => void
+  onGoToLine?: () => void
 }
 
 export function useKeyboardShortcuts(shortcuts: KeyboardShortcuts) {
@@ -79,6 +80,12 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcuts) {
     // Ctrl/Cmd + Shift + S: Save session (when no files loaded)
     if ((event.ctrlKey || event.metaKey) && event.key === 's' && event.shiftKey) {
       // Already handled by swap, but we can also use for session save
+    }
+
+    // Ctrl/Cmd + G: Go to line
+    if ((event.ctrlKey || event.metaKey) && event.key === 'g') {
+      event.preventDefault()
+      shortcuts.onGoToLine?.()
     }
 
     // Escape: Cancel/close

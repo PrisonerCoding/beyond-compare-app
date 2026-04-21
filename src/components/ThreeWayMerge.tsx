@@ -207,7 +207,7 @@ export function ThreeWayMerge({ onMergeComplete }: ThreeWayMergeProps) {
           📁 Right
         </button>
 
-        {summary?.conflicts > 0 && (
+        {(summary?.conflicts ?? 0) > 0 && (
           <div className="merge-resolve-all">
             <span className="resolve-label">Resolve All:</span>
             <button className="resolve-btn base" onClick={() => applyAllResolutions('base')}>

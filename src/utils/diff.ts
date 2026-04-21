@@ -8,8 +8,6 @@ export function computeDiff(left: string, right: string): DiffLine[] {
   dmp.diff_cleanupSemantic(diffs)
 
   const lines: DiffLine[] = []
-  const leftLines = left.split('\n')
-  const rightLines = right.split('\n')
 
   let leftLineNum = 0
   let rightLineNum = 0

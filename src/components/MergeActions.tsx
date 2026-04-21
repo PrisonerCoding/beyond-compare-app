@@ -1,5 +1,3 @@
-import { save } from '@tauri-apps/plugin-dialog'
-import { writeTextFile } from '@tauri-apps/plugin-fs'
 import type { FileContent } from '../types'
 
 interface MergeActionsProps {

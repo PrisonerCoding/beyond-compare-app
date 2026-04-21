@@ -337,7 +337,7 @@ export function SearchPanel({ isOpen, onClose, editorRef, side }: SearchPanelPro
 }
 
 // Hook for managing search state
-export function useSearchPanel(editorRef: any) {
+export function useSearchPanel(_editorRef: any) {
   const [leftSearchOpen, setLeftSearchOpen] = useState(false)
   const [rightSearchOpen, setRightSearchOpen] = useState(false)
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { readFile } from '@tauri-apps/plugin-fs'
 
 interface BinaryViewerProps {
@@ -177,15 +177,15 @@ export function BinaryViewer({ leftPath, rightPath }: BinaryViewerProps) {
     return diffBytes.some(d => d.offset === byteOffset)
   }
 
-  const renderHexView = (data: BinaryData | null, side: 'left' | 'right', startOffset: number) => {
+  const renderHexView = (data: BinaryData | null, _side: 'left' | 'right', startOffset: number) => {
     if (!data) return null
 
-    const rows: JSX.Element[] = []
+    const rows: React.ReactElement[] = []
     const endOffset = Math.min(startOffset + bytesPerRow * 10, data.size)
 
     for (let i = startOffset; i < endOffset; i += bytesPerRow) {
-      const hexCells: JSX.Element[] = []
-      const asciiCells: JSX.Element[] = []
+      const hexCells: React.ReactElement[] = []
+      const asciiCells: React.ReactElement[] = []
 
       for (let j = 0; j < bytesPerRow; j++) {
         const byteIndex = i + j
@@ -233,13 +233,13 @@ export function BinaryViewer({ leftPath, rightPath }: BinaryViewerProps) {
   }
 
   // Handle missing bytes (when one file is longer)
-  const renderMissingHexView = (startOffset: number, maxSize: number, side: 'left' | 'right') => {
-    const rows: JSX.Element[] = []
+  const renderMissingHexView = (startOffset: number, maxSize: number, _side: 'left' | 'right') => {
+    const rows: React.ReactElement[] = []
     const endOffset = Math.min(startOffset + bytesPerRow * 10, maxSize)
 
     for (let i = startOffset; i < endOffset; i += bytesPerRow) {
-      const hexCells: JSX.Element[] = []
-      const asciiCells: JSX.Element[] = []
+      const hexCells: React.ReactElement[] = []
+      const asciiCells: React.ReactElement[] = []
 
       for (let j = 0; j < bytesPerRow; j++) {
         const byteIndex = i + j

@@ -15,6 +15,7 @@ export interface DiffLine {
 export interface CompareMode {
   type: 'text' | 'folder' | 'binary' | 'image' | 'merge'
   label: string
+  icon?: string
 }
 
 export interface SyncAction {
@@ -33,3 +34,5 @@ export interface FolderItem {
 }
 
 export type CompareRule = 'content' | 'size' | 'date' | 'binary'
+
+export type LayoutMode = 'horizontal' | 'vertical'

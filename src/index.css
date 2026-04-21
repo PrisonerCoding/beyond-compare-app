@@ -3304,3 +3304,361 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ============ GO TO LINE DIALOG ============ */
+.goto-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.goto-dialog {
+  width: 400px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.goto-dialog-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.goto-dialog-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.goto-dialog-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.goto-dialog-close:hover {
+  color: var(--text-primary);
+}
+
+.goto-dialog-content {
+  padding: 20px;
+}
+
+.goto-dialog-info {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.goto-dialog-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.goto-dialog-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-width: 80px;
+}
+
+.goto-dialog-input {
+  flex: 1;
+  padding: 12px 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.goto-dialog-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.goto-dialog-input.error {
+  border-color: var(--diff-removed-line);
+}
+
+.goto-dialog-error {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--diff-removed-bg);
+  border-radius: 4px;
+  color: var(--diff-removed-line);
+  font-size: 12px;
+}
+
+.goto-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.goto-dialog-btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.goto-dialog-btn.cancel {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.goto-dialog-btn.cancel:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.goto-dialog-btn.submit {
+  background: var(--accent-gradient);
+  border: none;
+  color: white;
+  font-weight: 500;
+}
+
+.goto-dialog-btn.submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(233, 69, 96, 0.3);
+}
+
+/* GoTo Button in Toolbar */
+.nav-btn.goto-btn {
+  margin-left: 8px;
+}
+
+/* ============ LAYOUT TOGGLE ============ */
+.layout-btn {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layout-btn:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+.layout-btn-icon {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Word Wrap Toggle Button */
+.wrap-btn {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wrap-btn:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+.wrap-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+.wrap-btn-icon {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ============ COMPARE OPTIONS PANEL ============ */
+.compare-options-panel {
+  padding: 12px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.compare-options-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.compare-options-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.compare-options-reset {
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+}
+
+.compare-options-reset:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.compare-options-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.compare-option-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.compare-option-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.compare-option-checkbox {
+  accent-color: var(--accent-primary);
+  width: 16px;
+  height: 16px;
+}
+
+.compare-option-text {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.compare-option-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding-left: 24px;
+}
+
+/* Options Toggle Button */
+.options-btn {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.options-btn:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+.options-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+.options-btn-icon {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Vertical Layout */
+.App.vertical-layout {
+  flex-direction: column;
+}
+
+.App.vertical-layout .file-selectors {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.App.vertical-layout .file-selector {
+  border-right: none;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.App.vertical-layout .file-selector:last-child {
+  border-bottom: none;
+}
+
+.App.vertical-layout .diff-container {
+  flex-direction: column;
+}
+
+.App.vertical-layout .binary-views {
+  flex-direction: column;
+}
+
+.App.vertical-layout .binary-pane {
+  border-right: none;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.App.vertical-layout .binary-pane:last-child {
+  border-bottom: none;
+}
+
+.App.vertical-layout .image-side-by-side {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.App.vertical-layout .image-pane {
+  border-right: none;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.App.vertical-layout .image-pane:last-child {
+  border-bottom: none;
+}

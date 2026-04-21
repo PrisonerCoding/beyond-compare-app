@@ -19,7 +19,7 @@ export function computeCharDiff(text1: string, text2: string): CharDiff[] {
   const diffs = dmp.diff_main(text1, text2)
   dmp.diff_cleanupSemantic(diffs) // Improve diff readability
 
-  return diffs.map(([type, text]) => ({
+  return diffs.map(([type, text]: [number, string]) => ({
     type: type === 0 ? 'equal' : type === 1 ? 'insert' : 'delete',
     text,
   }))

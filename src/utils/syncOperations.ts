@@ -1,4 +1,4 @@
-import { copyFile, remove, mkdir, readDir, writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
+import { copyFile, remove, mkdir } from '@tauri-apps/plugin-fs'
 import { join, dirname } from '@tauri-apps/api/path'
 
 export interface SyncOperation {

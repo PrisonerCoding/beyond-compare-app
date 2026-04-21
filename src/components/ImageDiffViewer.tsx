@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { readFile } from '@tauri-apps/plugin-fs'
 
 interface ImageDiffViewerProps {
-  leftPath?: string
-  rightPath?: string
+  leftPath?: string | null
+  rightPath?: string | null
 }
 
 export function ImageDiffViewer({ leftPath, rightPath }: ImageDiffViewerProps) {

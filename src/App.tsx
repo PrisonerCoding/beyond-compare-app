@@ -12,11 +12,16 @@ import { MergeActions } from './components/MergeActions'
 import { FilterPanel } from './components/FilterPanel'
 import { ThreeWayMerge } from './components/ThreeWayMerge'
 import { ImageDiffViewer } from './components/ImageDiffViewer'
+import { GoToLineDialog } from './components/GoToLineDialog'
+import { CompareOptionsPanel } from './components/CompareOptionsPanel'
 import { computeDiffStats, getLanguageFromPath } from './utils/diff'
 import { isBinaryFile } from './utils/binaryCheck'
 import { compareFolders, getFolderStats } from './utils/folderCompare'
 import { saveSession, loadSession, loadSessionFromPath, addRecentSession, type SessionData } from './utils/session'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useLayoutMode } from './hooks/useLayoutMode'
+import { useWordWrap } from './hooks/useWordWrap'
+import { useCompareOptions } from './hooks/useCompareOptions'
 import type { FileContent, CompareMode, FolderItem, CompareRule } from './types'
 import './App.css'
 
@@ -55,6 +60,12 @@ function App() {
   const [isDragging, setIsDragging] = useState(false)
   const [diffCount, setDiffCount] = useState(0)
   const [currentDiffIndex, setCurrentDiffIndex] = useState(0)
+  const [goToLineOpen, setGoToLineOpen] = useState(false)
+
+  const { layoutMode, setLayoutMode } = useLayoutMode()
+  const { wordWrap, setWordWrap } = useWordWrap()
+  const { options: compareOptions, toggleOption: toggleCompareOption, resetOptions: resetCompareOptions } = useCompareOptions()
+  const [showCompareOptions, setShowCompareOptions] = useState(false)
 
   const diffHelperRef = useRef<ReturnType<typeof createDiffEditorHelper> | null>(null)
 
@@ -433,6 +444,14 @@ function App() {
     window.dispatchEvent(new CustomEvent('diff-navigate', { detail: { action: 'last' } }))
   }
 
+  const handleGoToLine = () => {
+    setGoToLineOpen(true)
+  }
+
+  const handleGoToLineSubmit = (lineNumber: number) => {
+    diffHelperRef.current?.goToLine(lineNumber)
+  }
+
   const handleNewSession = () => {
     handleRefresh()
   }
@@ -603,13 +622,14 @@ function App() {
     onNewSession: handleNewSession,
     onOpenSession: handleOpenSession,
     onSaveSession: handleSaveSession,
+    onGoToLine: handleGoToLine,
   })
 
   const hasFiles = currentMode.type === 'text' && !!leftFile && !!rightFile
   const hasFolders = currentMode.type === 'folder' && !!leftFolder && !!rightFolder
 
   return (
-    <div className={`App ${isDragging ? 'dragging' : ''}`}>
+    <div className={`App ${isDragging ? 'dragging' : ''} ${layoutMode === 'vertical' ? 'vertical-layout' : ''}`}>
       <Toolbar
         currentMode={currentMode}
         onModeChange={setCurrentMode}
@@ -623,10 +643,26 @@ function App() {
         onNextDiff={handleNextDiff}
         onFirstDiff={handleFirstDiff}
         onLastDiff={handleLastDiff}
+        onGoToLine={handleGoToLine}
+        layoutMode={layoutMode}
+        onLayoutChange={setLayoutMode}
+        wordWrap={wordWrap}
+        onWordWrapChange={setWordWrap}
+        showCompareOptions={showCompareOptions}
+        onToggleCompareOptions={() => setShowCompareOptions(!showCompareOptions)}
         diffCount={diffCount}
         currentDiffIndex={currentDiffIndex}
         hasFiles={hasFiles}
       />
+
+      {/* Compare Options Panel */}
+      {currentMode.type === 'text' && showCompareOptions && (
+        <CompareOptionsPanel
+          options={compareOptions}
+          onToggleOption={toggleCompareOption}
+          onReset={resetCompareOptions}
+        />
+      )}
 
       {/* File/Folder selectors based on mode */}
       {currentMode.type === 'text' ? (
@@ -696,6 +732,8 @@ function App() {
           onRightContentChange={handleRightContentChange}
           leftEditable={true}
           rightEditable={true}
+          wordWrap={wordWrap}
+          compareOptions={compareOptions}
         />
       )}
 
@@ -713,8 +751,8 @@ function App() {
 
       {currentMode.type === 'binary' && (
         <BinaryViewer
-          leftPath={leftFile?.path}
-          rightPath={rightFile?.path}
+          leftPath={leftFile?.path ?? null}
+          rightPath={rightFile?.path ?? null}
         />
       )}
 
@@ -728,10 +766,19 @@ function App() {
 
       {currentMode.type === 'image' && (
         <ImageDiffViewer
-          leftPath={leftFile?.path}
-          rightPath={rightFile?.path}
+          leftPath={leftFile?.path ?? null}
+          rightPath={rightFile?.path ?? null}
         />
       )}
+
+      {/* Go to Line Dialog */}
+      <GoToLineDialog
+        isOpen={goToLineOpen}
+        onClose={() => setGoToLineOpen(false)}
+        onGoToLine={handleGoToLineSubmit}
+        maxLines={diffHelperRef.current?.getLineCount() || 1}
+        currentLine={diffHelperRef.current?.getCurrentLine() || 1}
+      />
 
       {/* Status bar */}
       <div className="status-bar">

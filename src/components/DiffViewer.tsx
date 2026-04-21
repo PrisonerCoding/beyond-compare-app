@@ -1,7 +1,8 @@
 import { DiffEditor } from '@monaco-editor/react'
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect } from 'react'
 import { SearchPanel, useSearchPanel } from './SearchPanel'
 import type { FileContent } from '../types'
+import type { CompareOptions } from '../hooks/useCompareOptions'
 
 interface DiffViewerProps {
   leftFile: FileContent | null
@@ -11,6 +12,8 @@ interface DiffViewerProps {
   leftEditable?: boolean
   rightEditable?: boolean
   showInlineDiff?: boolean
+  wordWrap?: 'on' | 'off'
+  compareOptions?: CompareOptions
 }
 
 export function DiffViewer({
@@ -19,8 +22,10 @@ export function DiffViewer({
   onLeftContentChange,
   onRightContentChange,
   leftEditable = true,
-  rightEditable = true,
+  rightEditable: _rightEditable = true,
   showInlineDiff = true,
+  wordWrap = 'off',
+  compareOptions,
 }: DiffViewerProps) {
   const editorRef = useRef<any>(null)
   const inlineDiffEnabledRef = useRef(showInlineDiff)
@@ -98,6 +103,20 @@ export function DiffViewer({
           } else {
             openRightSearch()
           }
+        },
+        goToLine: (lineNumber: number) => {
+          const modifiedEd = editor.getModifiedEditor()
+          modifiedEd.revealLineInCenter(lineNumber)
+          modifiedEd.setPosition({ lineNumber, column: 1 })
+          modifiedEd.focus()
+        },
+        getLineCount: () => {
+          const modifiedEd = editor.getModifiedEditor()
+          return modifiedEd.getModel()?.getLineCount() || 1
+        },
+        getCurrentLine: () => {
+          const modifiedEd = editor.getModifiedEditor()
+          return modifiedEd.getPosition()?.lineNumber || 1
         },
       }
     }))
@@ -201,8 +220,8 @@ export function DiffViewer({
           folding: true,
           automaticLayout: true,
           renderOverviewRuler: true,
-          ignoreTrimWhitespace: false,
-          wordWrap: 'off',
+          ignoreTrimWhitespace: compareOptions?.ignoreTrimWhitespace ?? false,
+          wordWrap: wordWrap,
           originalEditable: leftEditable,
           renderIndicators: true,
           find: {
@@ -242,6 +261,9 @@ export function createDiffEditorHelper() {
   let goToFirstDiff: () => void = () => {}
   let goToLastDiff: () => void = () => {}
   let openSearch: (side: 'left' | 'right') => void = () => {}
+  let goToLine: (lineNumber: number) => void = () => {}
+  let getLineCount: () => number = () => 1
+  let getCurrentLine: () => number = () => 1
 
   const handleReady = (e: CustomEvent) => {
     getLeftContent = e.detail.getLeftContent
@@ -251,6 +273,9 @@ export function createDiffEditorHelper() {
     if (e.detail.goToFirstDiff) goToFirstDiff = e.detail.goToFirstDiff
     if (e.detail.goToLastDiff) goToLastDiff = e.detail.goToLastDiff
     if (e.detail.openSearch) openSearch = e.detail.openSearch
+    if (e.detail.goToLine) goToLine = e.detail.goToLine
+    if (e.detail.getLineCount) getLineCount = e.detail.getLineCount
+    if (e.detail.getCurrentLine) getCurrentLine = e.detail.getCurrentLine
   }
 
   window.addEventListener('diff-editor-ready', handleReady as EventListener)
@@ -263,6 +288,9 @@ export function createDiffEditorHelper() {
     goToFirstDiff,
     goToLastDiff,
     openSearch,
+    goToLine,
+    getLineCount,
+    getCurrentLine,
     cleanup: () => window.removeEventListener('diff-editor-ready', handleReady as EventListener),
   }
 }
