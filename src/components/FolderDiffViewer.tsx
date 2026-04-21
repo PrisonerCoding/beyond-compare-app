@@ -3,6 +3,7 @@ import type { FolderItem, FileContent, CompareRule } from '../types'
 import { getLanguageFromPath } from '../utils/diff'
 import { SyncPanel } from './SyncPanel'
 import { formatFileSize, formatDate } from '../utils/folderCompare'
+import { Folder, File, BarChart2, List } from 'lucide-react'
 
 interface FolderDiffViewerProps {
   leftFolder: FolderItem | null
@@ -176,7 +177,7 @@ export function FolderDiffViewer({
           )}
 
           <span className="tree-item-icon">
-            {item.type === 'folder' ? '📁' : '📄'}
+            {item.type === 'folder' ? <Folder size={14} /> : <File size={14} />}
           </span>
 
           <span className="tree-item-name">{item.name}</span>
@@ -213,7 +214,7 @@ export function FolderDiffViewer({
   if (!leftFolder && !rightFolder) {
     return (
       <div className="folder-diff-empty">
-        <div className="folder-empty-icon">📁</div>
+        <div className="folder-empty-icon"><Folder size={48} /></div>
         <div className="folder-empty-title">Select folders to compare</div>
         <div className="folder-empty-subtitle">
           Choose two directories to see their differences
@@ -260,7 +261,7 @@ export function FolderDiffViewer({
             onClick={() => setShowAttributes(!showAttributes)}
             title={showAttributes ? 'Hide file attributes' : 'Show file attributes'}
           >
-            {showAttributes ? '📊' : '📋'}
+            {showAttributes ? <BarChart2 size={14} /> : <List size={14} />}
           </button>
 
           <button

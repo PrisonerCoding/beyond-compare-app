@@ -23,3 +23,10 @@ tauri = { version = "2.10.3", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
+clap = { version = "4.5", features = ["derive"] }
+diff = "0.1"
+ssh2 = "0.9"  # SFTP/SSH support
+suppaftp = "6"  # FTP support
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+base64 = "0.22"
+sha2 = "0.10"  # For key fingerprint

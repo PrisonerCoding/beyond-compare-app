@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { FileContent } from '../types'
 import { getLanguageFromPath } from '../utils/diff'
 import { isBinaryFile, getFileTypeDescription } from '../utils/binaryCheck'
+import { FileText, FileType, File, FolderOpen, X, AlertCircle, Loader2 } from 'lucide-react'
 
 interface FileSelectorProps {
   label: 'Left' | 'Right'
@@ -56,19 +57,19 @@ export function FileSelector({ label, badge, file, onSelect, onClear }: FileSele
   }
 
   const getFileIcon = (language: string) => {
-    const icons: Record<string, string> = {
-      javascript: '📜',
-      typescript: '📘',
-      json: '📋',
-      html: '🌐',
-      css: '🎨',
-      python: '🐍',
-      rust: '🦀',
-      go: '🔷',
-      java: '☕',
-      markdown: '📝',
+    const iconComponents: Record<string, React.ReactNode> = {
+      javascript: <FileText size={18} />,
+      typescript: <FileType size={18} />,
+      json: <FileText size={18} />,
+      html: <FileText size={18} />,
+      css: <FileText size={18} />,
+      python: <FileText size={18} />,
+      rust: <FileText size={18} />,
+      go: <FileText size={18} />,
+      java: <FileText size={18} />,
+      markdown: <FileText size={18} />,
     }
-    return icons[language] || '📄'
+    return iconComponents[language] || <File size={18} />
   }
 
   return (
@@ -81,11 +82,11 @@ export function FileSelector({ label, badge, file, onSelect, onClear }: FileSele
 
         <div className="file-selector-actions">
           <button className="select-btn" onClick={handleSelectFile} disabled={isLoading}>
-            {isLoading ? '⏳ Loading...' : '📂 Select File'}
+            {isLoading ? <><Loader2 size={14} className="animate-spin" /> Loading...</> : <><FolderOpen size={14} /> Select File</>}
           </button>
           {file && (
             <button className="clear-btn" onClick={onClear}>
-              ✕ Clear
+              <X size={12} /> Clear
             </button>
           )}
         </div>
@@ -93,7 +94,7 @@ export function FileSelector({ label, badge, file, onSelect, onClear }: FileSele
 
       {error && (
         <div className="file-error">
-          <div className="file-error-icon">⚠️</div>
+          <div className="file-error-icon"><AlertCircle size={18} /></div>
           <div className="file-error-text">{error}</div>
         </div>
       )}
@@ -109,7 +110,7 @@ export function FileSelector({ label, badge, file, onSelect, onClear }: FileSele
         </div>
       ) : !error ? (
         <div className="file-empty">
-          <div className="file-empty-icon">📂</div>
+          <div className="file-empty-icon"><FolderOpen size={24} /></div>
           <div className="file-empty-text">Click "Select File" to choose a file</div>
         </div>
       ) : null}

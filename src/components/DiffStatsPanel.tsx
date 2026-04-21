@@ -1,5 +1,6 @@
 import type { FileContent } from '../types'
 import { computeDiffStats } from '../utils/diff'
+import { BarChart2, X } from 'lucide-react'
 
 interface DiffStatsPanelProps {
   leftFile: FileContent | null
@@ -35,17 +36,17 @@ export function DiffStatsPanel({
       <div className="diff-stats-panel" onClick={(e) => e.stopPropagation()}>
         <div className="diff-stats-header">
           <span className="diff-stats-title">
-            📊 Detailed Statistics
+            <BarChart2 size={14} /> Detailed Statistics
           </span>
           <button className="diff-stats-close-btn" onClick={onClose}>
-            ✕
+            <X size={14} />
           </button>
         </div>
 
         <div className="diff-stats-content">
           {!leftFile || !rightFile ? (
             <div className="diff-stats-empty">
-              <span className="diff-stats-empty-icon">📊</span>
+              <BarChart2 size={24} className="diff-stats-empty-icon" />
               <span className="diff-stats-empty-text">No files loaded</span>
             </div>
           ) : (

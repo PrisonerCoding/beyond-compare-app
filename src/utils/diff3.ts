@@ -403,3 +403,148 @@ export function getConflictSummary(result: Diff3Result): {
     unchanged: result.regions.filter(r => r.type === 'unchanged').length,
   }
 }
+
+/**
+ * Parse Git conflict markers from a file
+ * Returns parsed conflicts with their content sections
+ */
+export interface GitConflict {
+  startLine: number
+  endLine: number
+  leftContent: string[]
+  baseContent: string[]  // optional, between ||||||| and =======
+  rightContent: string[]
+  leftBranch?: string
+  rightBranch?: string
+}
+
+export interface ParsedGitConflicts {
+  hasConflicts: boolean
+  conflicts: GitConflict[]
+  cleanContent: string[]  // content without conflict markers
+}
+
+export function parseGitConflicts(content: string[]): ParsedGitConflicts {
+  const conflicts: GitConflict[] = []
+  const cleanContent: string[] = []
+
+  let i = 0
+  while (i < content.length) {
+    const line = content[i]
+
+    // Check for conflict start marker
+    if (line.startsWith('<<<<<<<')) {
+      const conflictStart = i
+      const leftBranch = line.slice(7).trim() || 'LEFT'
+      const leftContent: string[] = []
+      const baseContent: string[] = []
+      const rightContent: string[] = []
+
+      i++
+
+      // Collect left content
+      while (i < content.length && !content[i].startsWith('|||||||') && !content[i].startsWith('=======')) {
+        leftContent.push(content[i])
+        i++
+      }
+
+      // Check for base content (||||||| marker)
+      if (i < content.length && content[i].startsWith('|||||||')) {
+        i++
+        while (i < content.length && !content[i].startsWith('=======')) {
+          baseContent.push(content[i])
+          i++
+        }
+      }
+
+      // Skip ======= marker
+      if (i < content.length && content[i].startsWith('=======')) {
+        i++
+      }
+
+      // Collect right content
+      while (i < content.length && !content[i].startsWith('>>>>>>>')) {
+        rightContent.push(content[i])
+        i++
+      }
+
+      // Get right branch name
+      let rightBranch = 'RIGHT'
+      if (i < content.length && content[i].startsWith('>>>>>>>')) {
+        rightBranch = content[i].slice(7).trim() || 'RIGHT'
+        i++
+      }
+
+      conflicts.push({
+        startLine: conflictStart,
+        endLine: i - 1,
+        leftContent,
+        baseContent,
+        rightContent,
+        leftBranch,
+        rightBranch,
+      })
+    } else {
+      cleanContent.push(line)
+      i++
+    }
+  }
+
+  return {
+    hasConflicts: conflicts.length > 0,
+    conflicts,
+    cleanContent,
+  }
+}
+
+/**
+ * Generate Git conflict markers for a conflict
+ */
+export function generateConflictMarkers(conflict: {
+  leftContent: string[]
+  baseContent?: string[]
+  rightContent: string[]
+  leftBranch?: string
+  rightBranch?: string
+}): string[] {
+  const markers: string[] = []
+
+  markers.push(`<<<<<<< ${conflict.leftBranch || 'LEFT'}`)
+  markers.push(...conflict.leftContent)
+
+  if (conflict.baseContent && conflict.baseContent.length > 0) {
+    markers.push(`||||||| BASE`)
+    markers.push(...conflict.baseContent)
+  }
+
+  markers.push('=======')
+  markers.push(...conflict.rightContent)
+  markers.push(`>>>>>>> ${conflict.rightBranch || 'RIGHT'}`)
+
+  return markers
+}
+
+/**
+ * Auto-resolve all non-conflicting changes
+ * Returns a map of region indices to their resolutions
+ */
+export function autoResolveNonConflicts(
+  regions: Diff3Region[]
+): Map<number, 'base' | 'left' | 'right'> {
+  const resolutions = new Map<number, 'base' | 'left' | 'right'>()
+
+  for (let i = 0; i < regions.length; i++) {
+    const region = regions[i]
+
+    if (region.type === 'left-only') {
+      resolutions.set(i, 'left')
+    } else if (region.type === 'right-only') {
+      resolutions.set(i, 'right')
+    } else if (region.type === 'both-same') {
+      // Both made same change, prefer left (or could prefer right)
+      resolutions.set(i, 'left')
+    }
+  }
+
+  return resolutions
+}

@@ -1,4 +1,5 @@
 import type { FolderItem } from '../types'
+import { Folder, File, Plus, Minus, FileEdit, Check, ChevronDown, ChevronRight } from 'lucide-react'
 
 interface FolderTreeProps {
   items: FolderItem[]
@@ -11,13 +12,13 @@ export function FolderTree({ items, onItemClick, expandedPaths, onToggleExpand }
   const getStatusIcon = (status: FolderItem['status']) => {
     switch (status) {
       case 'added':
-        return '➕'
+        return <Plus size={12} />
       case 'removed':
-        return '➖'
+        return <Minus size={12} />
       case 'modified':
-        return '📝'
+        return <FileEdit size={12} />
       case 'equal':
-        return '✓'
+        return <Check size={12} />
     }
   }
 
@@ -53,12 +54,12 @@ export function FolderTree({ items, onItemClick, expandedPaths, onToggleExpand }
         >
           {item.type === 'folder' && (
             <span className="tree-expand-icon">
-              {hasChildren ? (isExpanded ? '▼' : '▶') : '•'}
+              {hasChildren ? (isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />) : '•'}
             </span>
           )}
 
           <span className="tree-item-icon">
-            {item.type === 'folder' ? '📁' : '📄'}
+            {item.type === 'folder' ? <Folder size={14} /> : <File size={14} />}
           </span>
 
           <span className="tree-item-name">{item.name}</span>

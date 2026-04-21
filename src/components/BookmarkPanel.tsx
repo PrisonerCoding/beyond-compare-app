@@ -1,4 +1,5 @@
 import type { Bookmark } from '../hooks/useBookmarks'
+import { Bookmark as BookmarkIcon, X } from 'lucide-react'
 
 interface BookmarkPanelProps {
   bookmarks: Bookmark[]
@@ -29,7 +30,7 @@ export function BookmarkPanel({
       <div className="bookmark-panel" onClick={(e) => e.stopPropagation()}>
         <div className="bookmark-panel-header">
           <span className="bookmark-panel-title">
-            📌 Bookmarks ({bookmarks.length})
+            <BookmarkIcon size={14} /> Bookmarks ({bookmarks.length})
           </span>
           <div className="bookmark-panel-actions">
             <button
@@ -40,7 +41,7 @@ export function BookmarkPanel({
               Clear All
             </button>
             <button className="bookmark-close-btn" onClick={onClose}>
-              ✕
+              <X size={14} />
             </button>
           </div>
         </div>
@@ -48,7 +49,7 @@ export function BookmarkPanel({
         <div className="bookmark-panel-content">
           {bookmarks.length === 0 ? (
             <div className="bookmark-empty">
-              <span className="bookmark-empty-icon">📌</span>
+              <BookmarkIcon size={24} className="bookmark-empty-icon" />
               <span className="bookmark-empty-text">No bookmarks</span>
               <span className="bookmark-empty-hint">
                 Click line number to add bookmark
@@ -79,7 +80,7 @@ export function BookmarkPanel({
                     }}
                     title="Remove bookmark"
                   >
-                    ✕
+                    <X size={12} />
                   </button>
                 </div>
               ))}

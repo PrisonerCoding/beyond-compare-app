@@ -3,7 +3,19 @@ import { Editor } from '@monaco-editor/react'
 import { open } from '@tauri-apps/plugin-dialog'
 import { readTextFile } from '@tauri-apps/plugin-fs'
 import { getLanguageFromPath } from '../utils/diff'
-import { diff3, generateMergeResult, getConflictSummary, type Diff3Region } from '../utils/diff3'
+import { diff3, generateMergeResult, getConflictSummary, autoResolveNonConflicts, type Diff3Region } from '../utils/diff3'
+import {
+  ChevronUp,
+  ChevronDown,
+  GitMerge,
+  Wand2,
+  CheckCircle2,
+  AlertTriangle,
+  FileText,
+  ArrowUpLeft,
+  ArrowDownRight,
+  Equal,
+} from 'lucide-react'
 
 interface MergeFile {
   path: string
@@ -114,19 +126,50 @@ export function ThreeWayMerge({ onMergeComplete }: ThreeWayMergeProps) {
     revealLine(resultEditorRef.current, region.baseStart + 1)
   }
 
+  // Navigate to next/previous conflict
+  const navigateConflict = (direction: 'prev' | 'next') => {
+    if (!diff3Result) return
+
+    const conflictIndices = diff3Result.conflicts.map(c => diff3Result.regions.indexOf(c))
+    if (conflictIndices.length === 0) return
+
+    const currentIndex = selectedConflictIndex ?? -1
+
+    if (direction === 'next') {
+      const nextIndex = conflictIndices.find(i => i > currentIndex) ?? conflictIndices[0]
+      setSelectedConflictIndex(nextIndex)
+      goToConflict(diff3Result.regions[nextIndex])
+    } else {
+      const prevCandidates = conflictIndices.filter(i => i < currentIndex)
+      const prevIndex = prevCandidates.length > 0 ? prevCandidates[prevCandidates.length - 1] : conflictIndices[conflictIndices.length - 1]
+      setSelectedConflictIndex(prevIndex)
+      goToConflict(diff3Result.regions[prevIndex])
+    }
+  }
+
+  // Auto-merge all non-conflicting changes
+  const autoMergeNonConflicts = () => {
+    if (!diff3Result) return
+    const newResolutions = autoResolveNonConflicts(diff3Result.regions)
+    // Preserve existing manual resolutions for conflicts
+    const combined = new Map(resolutions)
+    newResolutions.forEach((value, key) => combined.set(key, value))
+    setResolutions(combined)
+  }
+
   // Get conflict region info
   const getRegionInfo = (region: Diff3Region) => {
     switch (region.type) {
       case 'conflict':
-        return { label: 'Conflict', color: 'var(--diff-removed-line)', icon: '⚠️' }
+        return { label: 'Conflict', color: 'var(--diff-removed-line)', Icon: AlertTriangle }
       case 'left-only':
-        return { label: 'Left Only', color: 'var(--diff-removed-line)', icon: '←' }
+        return { label: 'Left Only', color: 'var(--diff-removed-line)', Icon: ArrowUpLeft }
       case 'right-only':
-        return { label: 'Right Only', color: 'var(--diff-added-line)', icon: '→' }
+        return { label: 'Right Only', color: 'var(--diff-added-line)', Icon: ArrowDownRight }
       case 'both-same':
-        return { label: 'Both Same', color: 'var(--diff-modified-line)', icon: '≡' }
+        return { label: 'Both Same', color: 'var(--diff-modified-line)', Icon: Equal }
       case 'unchanged':
-        return { label: 'Unchanged', color: 'var(--text-muted)', icon: '=' }
+        return { label: 'Unchanged', color: 'var(--text-muted)', Icon: CheckCircle2 }
     }
   }
 
@@ -150,19 +193,22 @@ export function ThreeWayMerge({ onMergeComplete }: ThreeWayMergeProps) {
   if (!baseFile && !leftFile && !rightFile) {
     return (
       <div className="merge-empty">
-        <div className="merge-empty-icon">🔀</div>
+        <GitMerge className="merge-empty-icon" size={48} />
         <div className="merge-empty-title">Three-Way Merge</div>
         <div className="merge-empty-subtitle">
           Load Base, Left, and Right files to detect and resolve conflicts
         </div>
         <div className="merge-empty-actions">
           <button className="merge-empty-btn" onClick={() => loadFile('base')}>
+            <FileText size={16} />
             Load Base
           </button>
           <button className="merge-empty-btn" onClick={() => loadFile('left')}>
+            <FileText size={16} />
             Load Left
           </button>
           <button className="merge-empty-btn" onClick={() => loadFile('right')}>
+            <FileText size={16} />
             Load Right
           </button>
         </div>
@@ -179,12 +225,42 @@ export function ThreeWayMerge({ onMergeComplete }: ThreeWayMergeProps) {
           <span className="merge-conflicts-count">
             {summary.conflicts > 0
               ? `${unresolvedCount} unresolved / ${summary.conflicts} conflicts`
-              : '✓ No conflicts'
+              : <CheckCircle2 size={16} style={{ marginRight: '4px' }} />
             }
-            {summary.autoResolvable > 0 && ` (${summary.autoResolvable} auto-resolved)`}
+            {(summary.autoResolvable ?? 0) > 0 && ` (${summary.autoResolvable} auto-resolvable)`}
           </span>
         )}
         <div className="merge-header-actions">
+          {/* Conflict Navigation */}
+          {(summary?.conflicts ?? 0) > 0 && (
+            <div className="merge-nav-buttons">
+              <button
+                className="merge-nav-btn"
+                onClick={() => navigateConflict('prev')}
+                title="Previous conflict"
+              >
+                <ChevronUp size={16} />
+              </button>
+              <button
+                className="merge-nav-btn"
+                onClick={() => navigateConflict('next')}
+                title="Next conflict"
+              >
+                <ChevronDown size={16} />
+              </button>
+            </div>
+          )}
+          {/* Auto-merge button */}
+          {(summary?.autoResolvable ?? 0) > 0 && (
+            <button
+              className="merge-auto-btn"
+              onClick={autoMergeNonConflicts}
+              title="Auto-merge all non-conflicting changes"
+            >
+              <Wand2 size={16} />
+              Auto Merge
+            </button>
+          )}
           <button
             className="merge-toggle-btn"
             onClick={() => setShowConflictPreview(!showConflictPreview)}
@@ -198,13 +274,16 @@ export function ThreeWayMerge({ onMergeComplete }: ThreeWayMergeProps) {
       {/* Toolbar */}
       <div className="merge-toolbar">
         <button className="merge-load-btn" onClick={() => loadFile('base')}>
-          📁 Base
+          <FileText size={16} />
+          Base
         </button>
         <button className="merge-load-btn" onClick={() => loadFile('left')}>
-          📁 Left
+          <FileText size={16} />
+          Left
         </button>
         <button className="merge-load-btn" onClick={() => loadFile('right')}>
-          📁 Right
+          <FileText size={16} />
+          Right
         </button>
 
         {(summary?.conflicts ?? 0) > 0 && (
@@ -320,7 +399,7 @@ export function ThreeWayMerge({ onMergeComplete }: ThreeWayMergeProps) {
                   }}
                 >
                   <span className="region-icon" style={{ color: info.color }}>
-                    {info.icon}
+                    <info.Icon size={14} />
                   </span>
                   <span className="region-label">{info.label}</span>
                   <span className="region-lines">
@@ -361,7 +440,10 @@ export function ThreeWayMerge({ onMergeComplete }: ThreeWayMergeProps) {
                     </div>
                   )}
                   {isConflict && isResolved && (
-                    <span className="region-resolved">✓ {resolutions.get(index)}</span>
+                    <span className="region-resolved">
+                      <CheckCircle2 size={12} />
+                      {resolutions.get(index)}
+                    </span>
                   )}
                 </div>
               )
@@ -376,7 +458,7 @@ export function ThreeWayMerge({ onMergeComplete }: ThreeWayMergeProps) {
           <span className="result-badge">RESULT</span>
           <span className="result-status">
             {unresolvedCount === 0
-              ? '✓ Ready to merge'
+              ? <><CheckCircle2 size={14} style={{ marginRight: '4px' }} /> Ready to merge</>
               : `${unresolvedCount} conflicts to resolve`
             }
           </span>

@@ -4,6 +4,7 @@ import { SearchPanel, useSearchPanel } from './SearchPanel'
 import type { FileContent } from '../types'
 import type { CompareOptions } from '../hooks/useCompareOptions'
 import type { Bookmark } from '../hooks/useBookmarks'
+import { Zap } from 'lucide-react'
 
 interface DiffViewerProps {
   leftFile: FileContent | null
@@ -274,7 +275,7 @@ export function DiffViewer({
   if (!leftFile || !rightFile) {
     return (
       <div className="diff-viewer-empty">
-        <div className="diff-empty-icon">⚡</div>
+        <div className="diff-empty-icon"><Zap size={48} /></div>
         <div className="diff-empty-title">Ready to Compare</div>
         <div className="diff-empty-subtitle">
           Select files on both sides to start comparing
