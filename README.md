@@ -164,8 +164,8 @@ difflens-cli --help
 
 ```bash
 # Clone the repository
-git clone https://github.com/PrisonerCoding/beyond-compare-app.git
-cd beyond-compare-app
+git clone https://github.com/PrisonerCoding/DiffLens.git
+cd DiffLens
 
 # Install dependencies
 pnpm install
