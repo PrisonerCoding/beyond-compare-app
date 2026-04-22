@@ -104,20 +104,26 @@ export function detectEncoding(bytes: Uint8Array): EncodingInfo {
       if (byte >= 0xC0 && byte <= 0xDF) {
         // 2-byte sequence
         if (i + 1 >= bytes.length || (bytes[i + 1] & 0xC0) !== 0x80) isValidUTF8 = false
+        i++ // Skip continuation byte
       } else if (byte >= 0xE0 && byte <= 0xEF) {
         // 3-byte sequence
         if (i + 2 >= bytes.length ||
             (bytes[i + 1] & 0xC0) !== 0x80 ||
             (bytes[i + 2] & 0xC0) !== 0x80) isValidUTF8 = false
+        i += 2 // Skip continuation bytes
       } else if (byte >= 0xF0 && byte <= 0xF7) {
         // 4-byte sequence
         if (i + 3 >= bytes.length ||
             (bytes[i + 1] & 0xC0) !== 0x80 ||
             (bytes[i + 2] & 0xC0) !== 0x80 ||
             (bytes[i + 3] & 0xC0) !== 0x80) isValidUTF8 = false
+        i += 3 // Skip continuation bytes
       } else if (byte >= 0x80 && byte <= 0xBF) {
         // Continuation byte without lead - invalid UTF-8
-        if (i === 0 || (bytes[i - 1] & 0xC0) !== 0xC0) isValidUTF8 = false
+        isValidUTF8 = false
+      } else if (byte >= 0xF8 && byte <= 0xFF) {
+        // Invalid UTF-8 start byte
+        isValidUTF8 = false
       }
     }
   }

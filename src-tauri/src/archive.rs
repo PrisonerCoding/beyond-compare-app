@@ -25,7 +25,7 @@ pub enum ArchiveType {
 }
 
 /// Detect archive type from path
-fn detect_archive_type(path: &str) -> ArchiveType {
+pub fn detect_archive_type(path: &str) -> ArchiveType {
     let lower = path.to_lowercase();
     if lower.ends_with(".zip") {
         ArchiveType::Zip

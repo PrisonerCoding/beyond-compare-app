@@ -20,19 +20,45 @@ export interface LineEndingStats {
  * Detect the dominant line ending style in content
  */
 export function detectLineEnding(content: string): LineEnding {
-  const stats = getLineEndingStats(content)
+  // Count line endings directly to avoid circular reference
+  let lf = 0
+  let crlf = 0
+  let cr = 0
 
-  if (stats.percentage.crlf > 80) return 'CRLF'
-  if (stats.percentage.lf > 80) return 'LF'
-  if (stats.percentage.cr > 80) return 'CR'
+  for (let i = 0; i < content.length; i++) {
+    if (content[i] === '\r') {
+      if (i + 1 < content.length && content[i + 1] === '\n') {
+        crlf++
+        i++ // Skip the \n part
+      } else {
+        cr++
+      }
+    } else if (content[i] === '\n') {
+      // Standalone \n (not preceded by \r)
+      if (i === 0 || content[i - 1] !== '\r') {
+        lf++
+      }
+    }
+  }
+
+  const total = lf + crlf + cr
+
+  if (total === 0) return 'LF' // Default for empty or no line endings
+
+  const lfPercent = (lf / total) * 100
+  const crlfPercent = (crlf / total) * 100
+  const crPercent = (cr / total) * 100
+
+  if (crlfPercent > 80) return 'CRLF'
+  if (lfPercent > 80) return 'LF'
+  if (crPercent > 80) return 'CR'
 
   // If mixed or unclear
-  if (stats.crlf > 0 && stats.lf > 0) return 'Mixed'
-  if (stats.crlf > 0) return 'CRLF'
-  if (stats.lf > 0) return 'LF'
-  if (stats.cr > 0) return 'CR'
+  if (crlf > 0 && lf > 0) return 'Mixed'
+  if (crlf > 0) return 'CRLF'
+  if (lf > 0) return 'LF'
+  if (cr > 0) return 'CR'
 
-  // Default for empty or no line endings
   return 'LF'
 }
 
@@ -62,7 +88,22 @@ export function getLineEndingStats(content: string): LineEndingStats {
   }
 
   const total = lf + crlf + cr
-  const detected = detectLineEnding(content)
+
+  // Determine detected type directly
+  let detected: LineEnding = 'LF'
+  if (total > 0) {
+    const lfPercent = (lf / total) * 100
+    const crlfPercent = (crlf / total) * 100
+    const crPercent = (cr / total) * 100
+
+    if (crlfPercent > 80) detected = 'CRLF'
+    else if (lfPercent > 80) detected = 'LF'
+    else if (crPercent > 80) detected = 'CR'
+    else if (crlf > 0 && lf > 0) detected = 'Mixed'
+    else if (crlf > 0) detected = 'CRLF'
+    else if (lf > 0) detected = 'LF'
+    else if (cr > 0) detected = 'CR'
+  }
 
   return {
     lf,

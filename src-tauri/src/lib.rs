@@ -1,7 +1,7 @@
-mod cli;
-mod remote;
-mod git;
-mod archive;
+pub mod cli;
+pub mod remote;
+pub mod git;
+pub mod archive;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
