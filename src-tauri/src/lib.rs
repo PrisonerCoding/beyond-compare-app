@@ -1,6 +1,7 @@
 mod cli;
 mod remote;
 mod git;
+mod archive;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -19,10 +20,12 @@ pub fn run() {
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_dialog::init())
     .invoke_handler(tauri::generate_handler![
+      // Remote commands
       remote::connect_remote,
       remote::list_remote_dir,
       remote::download_remote_file,
       remote::upload_remote_file,
+      // Git commands
       git::git_is_repo,
       git::git_log,
       git::git_show_files,
@@ -32,6 +35,10 @@ pub fn run() {
       git::git_branches,
       git::git_get_current_branch,
       git::git_get_file_at_commit,
+      // Archive commands
+      archive::list_archive_entries,
+      archive::extract_archive_file,
+      archive::get_archive_type,
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

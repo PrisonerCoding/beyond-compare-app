@@ -25,6 +25,8 @@ import {
   RefreshCw,
   FileOutput,
   ArrowLeftRight,
+  PackageOpen,
+  Music,
 } from 'lucide-react'
 
 const COMPARE_MODES: CompareMode[] = [
@@ -33,6 +35,8 @@ const COMPARE_MODES: CompareMode[] = [
   { type: 'merge', label: 'Merge', icon: 'GitMerge' },
   { type: 'binary', label: 'Binary', icon: 'Binary' },
   { type: 'image', label: 'Image', icon: 'Image' },
+  { type: 'archive', label: 'Archive', icon: 'PackageOpen' },
+  { type: 'audio', label: 'Audio', icon: 'Music' },
 ]
 
 interface ToolbarProps {
@@ -112,6 +116,8 @@ export function Toolbar({
       GitMerge: <GitMerge size={14} />,
       Binary: <Binary size={14} />,
       Image: <Image size={14} />,
+      PackageOpen: <PackageOpen size={14} />,
+      Music: <Music size={14} />,
     }
     return icons[iconName] || null
   }

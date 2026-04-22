@@ -30,3 +30,7 @@ suppaftp = "6"  # FTP support
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 base64 = "0.22"
 sha2 = "0.10"  # For key fingerprint
+zip = "2"  # ZIP archive support
+tar = "0.4"  # TAR archive support
+flate2 = "1"  # GZIP support for tar.gz
+bzip2 = "0.4"  # BZIP2 support for tar.bz2

@@ -13,7 +13,7 @@ export interface DiffLine {
 }
 
 export interface CompareMode {
-  type: 'text' | 'folder' | 'binary' | 'image' | 'merge'
+  type: 'text' | 'folder' | 'binary' | 'image' | 'merge' | 'archive' | 'audio'
   label: string
   icon?: string
 }

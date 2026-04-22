@@ -12,6 +12,8 @@ import { MergeActions } from './components/MergeActions'
 import { FilterPanel } from './components/FilterPanel'
 import { ThreeWayMerge } from './components/ThreeWayMerge'
 import { ImageDiffViewer } from './components/ImageDiffViewer'
+import { ArchiveDiffViewer } from './components/ArchiveDiffViewer'
+import { AudioDiffViewer } from './components/AudioDiffViewer'
 import { GoToLineDialog } from './components/GoToLineDialog'
 import { CompareOptionsPanel } from './components/CompareOptionsPanel'
 import { BookmarkPanel } from './components/BookmarkPanel'
@@ -767,6 +769,8 @@ function App() {
           onMergeRightToLeft={handleMergeRightToLeft}
           onSaveLeft={handleSaveLeft}
           onSaveRight={handleSaveRight}
+          onLeftContentChange={handleLeftContentChange}
+          onRightContentChange={handleRightContentChange}
           hasLeftChanges={hasLeftChanges}
           hasRightChanges={hasRightChanges}
         />
@@ -817,6 +821,43 @@ function App() {
 
       {currentMode.type === 'image' && (
         <ImageDiffViewer
+          leftPath={leftFile?.path ?? null}
+          rightPath={rightFile?.path ?? null}
+        />
+      )}
+
+      {currentMode.type === 'archive' && (
+        <ArchiveDiffViewer
+          leftPath={leftFile?.path ?? null}
+          rightPath={rightFile?.path ?? null}
+          onFileExtract={(leftContent, rightContent, entryPath) => {
+            // Convert extracted files to text and switch to text mode
+            const leftText = leftContent ? new TextDecoder().decode(leftContent) : null
+            const rightText = rightContent ? new TextDecoder().decode(rightContent) : null
+
+            if (leftText) {
+              setLeftFile({
+                path: `${leftFile?.path || 'archive'}:${entryPath}`,
+                content: leftText,
+                language: getLanguageFromPath(entryPath),
+              })
+            }
+
+            if (rightText) {
+              setRightFile({
+                path: `${rightFile?.path || 'archive'}:${entryPath}`,
+                content: rightText,
+                language: getLanguageFromPath(entryPath),
+              })
+            }
+
+            setCurrentMode({ type: 'text', label: 'Text' })
+          }}
+        />
+      )}
+
+      {currentMode.type === 'audio' && (
+        <AudioDiffViewer
           leftPath={leftFile?.path ?? null}
           rightPath={rightFile?.path ?? null}
         />
