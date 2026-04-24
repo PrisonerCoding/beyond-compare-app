@@ -34,3 +34,4 @@ zip = "2"  # ZIP archive support
 tar = "0.4"  # TAR archive support
 flate2 = "1"  # GZIP support for tar.gz
 bzip2 = "0.4"  # BZIP2 support for tar.bz2
+chrono = "0.4"  # For timestamp formatting

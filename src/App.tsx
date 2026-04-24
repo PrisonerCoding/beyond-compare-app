@@ -18,11 +18,12 @@ import { GoToLineDialog } from './components/GoToLineDialog'
 import { CompareOptionsPanel } from './components/CompareOptionsPanel'
 import { BookmarkPanel } from './components/BookmarkPanel'
 import { DiffStatsPanel } from './components/DiffStatsPanel'
+import { SnapshotPanel } from './components/SnapshotPanel'
 import { computeDiffStats, getLanguageFromPath } from './utils/diff'
 import { isBinaryFile } from './utils/binaryCheck'
 import { compareFolders, getFolderStats } from './utils/folderCompare'
 import { saveSession, loadSession, loadSessionFromPath, addRecentSession, type SessionData } from './utils/session'
-import { generateDiffReport, downloadReport } from './utils/exportReport'
+import { generateDiffReport, generateBinaryReport, generateFolderReport, downloadReport } from './utils/exportReport'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useLayoutMode } from './hooks/useLayoutMode'
 import { useWordWrap } from './hooks/useWordWrap'
@@ -57,6 +58,8 @@ function App() {
   const [isComparingFolders, setIsComparingFolders] = useState(false)
   const [filters, setFilters] = useState<string[]>(DEFAULT_FILTERS)
   const [compareRule, setCompareRule] = useState<CompareRule>('content')
+  const [showSnapshotPanel, setShowSnapshotPanel] = useState(false)
+  const [alignmentMap, setAlignmentMap] = useState<Record<string, string>>({})
 
   // Common state
   const [currentMode, setCurrentMode] = useState<CompareMode>({
@@ -343,6 +346,46 @@ function App() {
     }
   }
 
+  // 从文件夹双击打开文件到指定模式
+  const handleOpenInMode = async (
+    mode: 'text' | 'image' | 'audio' | 'archive' | 'binary' | 'folder',
+    leftPath: string,
+    rightPath: string | null
+  ) => {
+    try {
+      // 设置左文件
+      setLeftFile({
+        path: leftPath,
+        content: mode === 'text' ? await readTextFile(leftPath) : '',
+        language: getLanguageFromPath(leftPath),
+      })
+
+      // 设置右文件（如果存在）
+      if (rightPath) {
+        setRightFile({
+          path: rightPath,
+          content: mode === 'text' ? await readTextFile(rightPath) : '',
+          language: getLanguageFromPath(rightPath),
+        })
+      } else {
+        setRightFile(null)
+      }
+
+      // 切换到目标模式
+      const modeLabels: Record<string, string> = {
+        text: 'Text',
+        image: 'Image',
+        audio: 'Audio',
+        archive: 'Archive',
+        binary: 'Binary',
+        folder: 'Folder',
+      }
+      setCurrentMode({ type: mode, label: modeLabels[mode] })
+    } catch (error) {
+      console.error('Failed to open files in mode:', error)
+    }
+  }
+
   const getDiffStats = () => {
     if (!leftFile || !rightFile) return null
     return {
@@ -481,22 +524,63 @@ function App() {
     handleRefresh()
   }
 
-  const handleExportReport = () => {
-    if (!leftFile || !rightFile) return
+  const handleExportReport = async () => {
+    try {
+      // Folder mode
+      if (currentMode.type === 'folder' && leftFolder && rightFolder) {
+        const leftName = leftFolder.path.split(/[/\\]/).pop() || 'left'
+        const rightName = rightFolder.path.split(/[/\\]/).pop() || 'right'
+        const fileName = `folder-report-${leftName}-vs-${rightName}.html`
 
-    const stats = computeDiffStats(leftFile.content, rightFile.content)
-    const htmlContent = generateDiffReport({
-      leftFile,
-      rightFile,
-      diffStats: stats,
-      showLineNumbers: true,
-    })
+        const stats = getFolderDiffStats()
+        const htmlContent = generateFolderReport({
+          leftFolder,
+          rightFolder,
+          stats,
+          filters,
+        })
+        const success = await downloadReport(htmlContent, fileName)
+        if (success) {
+          console.log('Report saved successfully')
+        }
+        return
+      }
 
-    const leftName = leftFile.path.split(/[/\\]/).pop() || 'left'
-    const rightName = rightFile.path.split(/[/\\]/).pop() || 'right'
-    const fileName = `diff-report-${leftName}-vs-${rightName}.html`
+      // File modes (text, image, binary, audio, archive)
+      if (!leftFile || !rightFile) return
 
-    downloadReport(htmlContent, fileName)
+      const leftName = leftFile.path.split(/[/\\]/).pop() || 'left'
+      const rightName = rightFile.path.split(/[/\\]/).pop() || 'right'
+      const fileName = `diff-report-${leftName}-vs-${rightName}.html`
+
+      // For text mode, generate detailed diff report
+      if (currentMode.type === 'text' && leftFile.content && rightFile.content) {
+        const stats = computeDiffStats(leftFile.content, rightFile.content)
+        const htmlContent = generateDiffReport({
+          leftFile,
+          rightFile,
+          diffStats: stats,
+          showLineNumbers: true,
+        })
+        const success = await downloadReport(htmlContent, fileName)
+        if (success) {
+          console.log('Report saved successfully')
+        }
+      } else {
+        // For binary/image/audio modes, generate comparison report with detailed info
+        const htmlContent = await generateBinaryReport({
+          leftFile,
+          rightFile,
+          mode: currentMode.type,
+        })
+        const success = await downloadReport(htmlContent, fileName)
+        if (success) {
+          console.log('Report saved successfully')
+        }
+      }
+    } catch (error) {
+      console.error('Failed to export report:', error)
+    }
   }
 
   const handleSaveSession = async () => {
@@ -668,8 +752,9 @@ function App() {
     onGoToLine: handleGoToLine,
   })
 
-  const hasFiles = currentMode.type === 'text' && !!leftFile && !!rightFile
+  const hasFiles = (currentMode.type === 'text' || currentMode.type === 'image' || currentMode.type === 'binary' || currentMode.type === 'audio' || currentMode.type === 'archive') && !!leftFile && !!rightFile
   const hasFolders = currentMode.type === 'folder' && !!leftFolder && !!rightFolder
+  const canExport = hasFiles || hasFolders
 
   return (
     <div className={`App ${isDragging ? 'dragging' : ''} ${layoutMode === 'vertical' ? 'vertical-layout' : ''}`}>
@@ -703,7 +788,9 @@ function App() {
         onToggleDiffStats={() => setShowDiffStats(!showDiffStats)}
         diffCount={diffCount}
         currentDiffIndex={currentDiffIndex}
-        hasFiles={hasFiles}
+        hasFiles={canExport}
+        showSnapshotPanel={showSnapshotPanel}
+        onToggleSnapshotPanel={() => setShowSnapshotPanel(!showSnapshotPanel)}
       />
 
       {/* Compare Options Panel */}
@@ -716,7 +803,7 @@ function App() {
       )}
 
       {/* File/Folder selectors based on mode */}
-      {currentMode.type === 'text' ? (
+      {currentMode.type === 'text' || currentMode.type === 'image' || currentMode.type === 'audio' || currentMode.type === 'archive' || currentMode.type === 'binary' ? (
         <div className="file-selectors">
           <FileSelector
             label="Left"
@@ -724,6 +811,7 @@ function App() {
             file={leftFile}
             onSelect={setLeftFile}
             onClear={() => setLeftFile(null)}
+            allowBinary={currentMode.type !== 'text'}
           />
           <FileSelector
             label="Right"
@@ -731,6 +819,7 @@ function App() {
             file={rightFile}
             onSelect={setRightFile}
             onClear={() => setRightFile(null)}
+            allowBinary={currentMode.type !== 'text'}
           />
         </div>
       ) : (
@@ -798,9 +887,25 @@ function App() {
           rightFolder={rightFolder}
           diffItems={folderDiffItems}
           onFileSelect={handleFileSelectFromFolder}
+          onOpenInMode={handleOpenInMode}
           onRefresh={refreshFolderComparison}
           compareRule={compareRule}
           onCompareRuleChange={setCompareRule}
+          alignmentMap={alignmentMap}
+          onAlignmentChange={setAlignmentMap}
+        />
+      )}
+
+      {/* Snapshot Panel */}
+      {showSnapshotPanel && (
+        <SnapshotPanel
+          isOpen={showSnapshotPanel}
+          onClose={() => setShowSnapshotPanel(false)}
+          currentFolder={leftFolder?.path ?? null}
+          onLoadSnapshot={(snapshot) => {
+            console.log('Loaded snapshot:', snapshot.name)
+            setShowSnapshotPanel(false)
+          }}
         />
       )}
 

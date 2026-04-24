@@ -67,3 +67,33 @@ export function getFileTypeDescription(path: string): string {
 
   return typeMap[ext] || 'Binary File'
 }
+
+// 获取文件类别
+export function getFileCategory(path: string): 'text' | 'image' | 'audio' | 'archive' | 'binary' {
+  const ext = path.split('.').pop()?.toLowerCase() || ''
+
+  const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico', 'webp', 'tiff', 'tif', 'svg']
+  const audioExtensions = ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'aiff', 'wma']
+  const archiveExtensions = ['zip', 'tar', 'gz', 'tgz', 'bz2', 'tbz2', 'rar', '7z', 'xz']
+
+  if (imageExtensions.includes(ext)) return 'image'
+  if (audioExtensions.includes(ext)) return 'audio'
+  if (archiveExtensions.includes(ext) || path.toLowerCase().endsWith('.tar.gz') || path.toLowerCase().endsWith('.tar.bz2')) return 'archive'
+
+  // 文本文件扩展名
+  const textExtensions = [
+    'txt', 'md', 'json', 'xml', 'yaml', 'yml', 'toml',
+    'js', 'ts', 'jsx', 'tsx', 'vue', 'svelte',
+    'py', 'rb', 'go', 'rs', 'java', 'kt', 'swift', 'c', 'cpp', 'h', 'hpp',
+    'cs', 'php', 'sh', 'bash', 'zsh', 'ps1', 'bat', 'cmd',
+    'html', 'htm', 'css', 'scss', 'sass', 'less',
+    'sql', 'graphql', 'proto',
+    'ini', 'cfg', 'conf', 'config', 'env', 'gitignore', 'dockerignore',
+    'log', 'csv', 'tsv',
+  ]
+
+  if (textExtensions.includes(ext)) return 'text'
+  if (!isBinaryFile(path)) return 'text'
+
+  return 'binary'
+}

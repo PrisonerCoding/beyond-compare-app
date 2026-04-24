@@ -27,6 +27,7 @@ import {
   ArrowLeftRight,
   PackageOpen,
   Music,
+  Camera,
 } from 'lucide-react'
 
 const COMPARE_MODES: CompareMode[] = [
@@ -70,6 +71,8 @@ interface ToolbarProps {
   diffCount?: number
   currentDiffIndex?: number
   hasFiles?: boolean
+  showSnapshotPanel?: boolean
+  onToggleSnapshotPanel?: () => void
 }
 
 export function Toolbar({
@@ -103,6 +106,8 @@ export function Toolbar({
   diffCount = 0,
   currentDiffIndex = 0,
   hasFiles = false,
+  showSnapshotPanel = false,
+  onToggleSnapshotPanel,
 }: ToolbarProps) {
   const [showRecentMenu, setShowRecentMenu] = useState(false)
   const [recentSessions, setRecentSessions] = useState<RecentSession[]>([])
@@ -356,6 +361,17 @@ export function Toolbar({
 
         {/* Secondary Actions */}
         <div className="toolbar-secondary-actions">
+          {/* Snapshot Panel Toggle (Folder mode only) */}
+          {currentMode.type === 'folder' && (
+            <button
+              className={`toolbar-btn icon-only ${showSnapshotPanel ? 'active' : ''}`}
+              onClick={onToggleSnapshotPanel}
+              title="Folder Snapshot Comparison"
+            >
+              <Camera size={14} />
+            </button>
+          )}
+
           {/* Diff Stats Toggle */}
           <button
             className="toolbar-btn icon-only"

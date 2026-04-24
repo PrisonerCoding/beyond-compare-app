@@ -275,3 +275,17 @@ export function formatDate(timestamp: number | undefined): string {
   const date = new Date(timestamp)
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
+
+// Get extended file metadata from Rust backend
+import { invoke } from '@tauri-apps/api/core'
+import type { FileMetadata } from '../types'
+
+export async function getExtendedMetadata(path: string): Promise<FileMetadata | null> {
+  try {
+    const metadata = await invoke<FileMetadata>('get_extended_file_metadata', { path })
+    return metadata
+  } catch (error) {
+    console.error('Failed to get extended metadata:', error)
+    return null
+  }
+}

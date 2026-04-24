@@ -2,6 +2,8 @@ pub mod cli;
 pub mod remote;
 pub mod git;
 pub mod archive;
+pub mod metadata;
+pub mod snapshot;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -39,6 +41,11 @@ pub fn run() {
       archive::list_archive_entries,
       archive::extract_archive_file,
       archive::get_archive_type,
+      // Metadata commands
+      metadata::get_extended_file_metadata,
+      // Snapshot commands
+      snapshot::save_folder_snapshot,
+      snapshot::load_folder_snapshot,
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

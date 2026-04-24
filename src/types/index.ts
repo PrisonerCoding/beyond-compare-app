@@ -33,6 +33,18 @@ export interface FolderItem {
   children?: FolderItem[]
 }
 
+export interface FileMetadata {
+  path: string
+  size: number
+  created?: string
+  modified?: string
+  accessed?: string
+  is_readonly: boolean
+  is_hidden: boolean
+  permissions?: string
+  mode?: number
+}
+
 export type CompareRule = 'content' | 'size' | 'date' | 'binary'
 
 export type LayoutMode = 'horizontal' | 'vertical'
